@@ -98,7 +98,8 @@ class Program
 
         var urlOption = new Option<string>(
             name: "--url",
-            description: "URL for the asset.");
+            description: "URL for the asset.",
+            getDefaultValue: () => null);
 
         // commands
         var generateAccountCommand = new Command("generateaccount", "Generate a new account and expose the private key");
@@ -221,6 +222,18 @@ class Program
         };
         paymentCommand.SetHandler(Payment, fromAddressOption, destinationAddressOption, optionalAssetOption, amountOption, roundOption, validRoundsOption, noteOption);
 
+        var clawbackCommand = new Command("clawback", "Create a new clawback transaction.")
+        {
+            fromAddressOption,
+            destinationAddressOption,
+            assetOption,
+            amountOption,
+            roundOption,
+            validRoundsOption,
+            noteOption
+        };
+        clawbackCommand.SetHandler(Clawback, fromAddressOption, destinationAddressOption, assetOption, amountOption, roundOption, validRoundsOption, noteOption);
+
         var signCommand = new Command("sign", "Sign a msgpack base64 encoded transaction.")
         {
             privateKeyOption,
@@ -244,6 +257,7 @@ class Program
         rootCommand.AddCommand(unfreezeCommand);
         rootCommand.AddCommand(manageAssetCommand);
         rootCommand.AddCommand(paymentCommand);
+        rootCommand.AddCommand(clawbackCommand);
         rootCommand.AddCommand(submitCommand);
 
         return await rootCommand.InvokeAsync(args);
@@ -323,12 +337,6 @@ class Program
             return;
         }
 
-        if (string.IsNullOrEmpty(url))
-        {
-            await Console.Out.WriteLineAsync("Please supply url.");
-            return;
-        }
-
         if (defaultFrozen is null)
         {
             await Console.Out.WriteLineAsync("Please supply default frozen.");
@@ -351,10 +359,10 @@ class Program
             Url = url,
 
             Creator = creator,
-            Clawback = manager,
-            Freeze = manager,
+            Clawback = reserve,
+            Freeze = reserve,
             Manager = manager,
-            Reserve = manager
+            Reserve = reserve
         };
 
         var transactionParams = GetManualParams(round);
@@ -536,6 +544,55 @@ class Program
             : Algorand.Utils.GetTransferAssetTransaction(
                 new Algorand.Address(fromAddress), new Algorand.Address(destinationAddress),
                 asset, amount.Value, transactionParams, message: note ?? "");
+
+        // set validity time to 1000 blocks from now
+        assetTxn.firstValid = transactionParams.LastRound;
+        assetTxn.lastValid = transactionParams.LastRound + roundValidity;
+
+        var encodedSigned = Algorand.Encoder.EncodeToMsgPack(assetTxn);
+
+        Console.WriteLine("Unsigned tx on next line:");
+        Console.WriteLine(Convert.ToBase64String(encodedSigned));
+    }
+
+
+    static async Task Clawback(string? fromAddress, string? destinationAddress, ulong asset, ulong? amount, ulong round, ulong roundValidity, string? note)
+    {
+        if (fromAddress == null || destinationAddress == null)
+        {
+            Console.WriteLine("Please supply `from` and `to` address.");
+            return;
+        }
+
+        if (asset == 0)
+        {
+            await Console.Out.WriteLineAsync("Please supply asset.");
+            return;
+        }
+
+        if (amount is null)
+        {
+            await Console.Out.WriteLineAsync("Please supply `amount`.");
+            return;
+        }
+
+        if (round == 0)
+        {
+            await Console.Out.WriteLineAsync("Please supply latest round.");
+            return;
+        }
+
+        if (roundValidity == 0)
+        {
+            await Console.Out.WriteLineAsync("Please supply round validity.");
+            return;
+        }
+
+        var transactionParams = GetManualParams(round);
+
+        var assetTxn = Algorand.Utils.GetRevokeAssetTransaction(new Algorand.Address(destinationAddress), 
+            new Algorand.Address(fromAddress), new Algorand.Address(destinationAddress), asset, amount.Value, 
+            transactionParams, message: note ?? "");
 
         // set validity time to 1000 blocks from now
         assetTxn.firstValid = transactionParams.LastRound;
