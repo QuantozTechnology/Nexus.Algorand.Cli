@@ -38,7 +38,7 @@ It is especially relevant in regulated environments where ownership should be co
 
 By importing a token, ownership still sits with the client due to the creator address' private key not being stored in Nexus. The creator's address can at any stage be used to change the token's reserve account, to remove any access which Nexus had to the token.
 
-Follow the bellow steps to import an EMT created independent of Nexus, into Nexus:
+Follow the below steps to import an EMT created independent of Nexus, into Nexus:
 - Create an account by using the tool:  
   ```bash
   dotnet run generateaccount
@@ -83,7 +83,7 @@ Follow the bellow steps to import an EMT created independent of Nexus, into Nexu
 ### 2. Remove Nexus access from your imported EMT  
 After creating and importing an EMT into Nexus, the token's creator and manager address will differ to that of the token's reserve, freeze and clawback, which means ownership of the token sit with you, while the operational token activities address can still be done within Nexus. Ownership means that the token's creator and manager address' private key is not stored within Nexus, and that the owner has the power to at any stage, clawback all tokens, and change the token's reserve, freeze and clawback address to remove any access which Nexus had to the token.
 
-Follow the bellow steps to remove any access Nexus has to your EMT:
+Follow the below steps to remove any access Nexus has to your EMT:
  - Update token by setting the reserve account back to the creator account or a new different account and by using the tool:
   ```bash
   dotnet run manageasset --asset 736070675 --from U6F6HT2POR3PDXJFSD5EQYFYLOQFUKUG43F4GZUTIAA2USWPEPDIL2X52I --creator U6F6HT2POR3PDXJFSD5EQYFYLOQFUKUG43F4GZUTIAA2USWPEPDIL2X52I --manager U6F6HT2POR3PDXJFSD5EQYFYLOQFUKUG43F4GZUTIAA2USWPEPDIL2X52I --reserve U6F6HT2POR3PDXJFSD5EQYFYLOQFUKUG43F4GZUTIAA2USWPEPDIL2X52I --round 49801250 --decimals 7 --overalllimit 10000 --unit TEMT001 --name TestEMTCreation1
